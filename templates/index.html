@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 关键：让手机按设备宽度显示，而不是缩小整张电脑网页 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#090b20">
+    <meta name="description" content="在星海与静谧之间，向答案之书提出一个问题。">
+    <title>答案之书 · 星海预言</title>
+    <!-- Flask 会从 static/css 中读取样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20261015-1653') }}">
+</head>
+<body>
+    <!-- 背景装饰只负责视觉，不会挡住按钮 -->
+    <div class="cosmos" aria-hidden="true">
+        <div class="nebula nebula-one"></div>
+        <div class="nebula nebula-two"></div>
+        <div class="starfield"></div>
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+    </div>
+
+    <section class="opening" id="opening" aria-label="答案之书开场">
+        <canvas class="opening-stars" id="openingStars" aria-hidden="true"></canvas>
+        <div class="opening-horizon" aria-hidden="true"></div>
+        <div class="opening-rift" aria-hidden="true"></div>
+        <div class="opening-comet comet-one" aria-hidden="true"></div>
+        <div class="opening-comet comet-two" aria-hidden="true"></div>
+        <div class="opening-copy">
+            <p class="opening-eyebrow">AN INVITATION FROM THE COSMOS</p>
+            <p class="opening-title">当群星静默<br>书页将为你开启</p>
+            <p class="opening-whisper">倾听内心，穿越未知</p>
+        </div>
+        <div class="opening-portal" aria-hidden="true">
+            <div class="portal-ring portal-ring-outer"><span>✦</span><i>✧</i></div>
+            <div class="portal-ring portal-ring-middle"><span>✧</span><i>✦</i></div>
+            <div class="portal-ring portal-ring-inner"></div>
+            <div class="portal-crosshair"></div>
+            <span class="portal-rune rune-north">✦</span>
+            <span class="portal-rune rune-east">✧</span>
+            <span class="portal-rune rune-south">☾</span>
+            <span class="portal-rune rune-west">✧</span>
+        </div>
+        <div class="opening-book" aria-hidden="true">
+            <div class="opening-book-pages"></div>
+            <div class="opening-book-cover">
+                <span class="opening-seal" aria-hidden="true">✦</span>
+                <strong>星空秘境</strong>
+                <small>THE STARLIT SANCTUARY</small>
+            </div>
+        </div>
+        <p class="opening-footnote" aria-hidden="true">在万籁俱寂之处，答案从未远离</p>
+        <button type="button" id="skipOpening" class="skip-opening">跳过开场 <span aria-hidden="true">→</span></button>
+    </section>
+
+    <section id="onboarding" class="onboarding" aria-labelledby="welcomeTitle" hidden>
+        <div class="onboarding-card panel">
+            <p class="onboarding-kicker">A QUIET PLACE IN THE STARS</p>
+            <h1 id="welcomeTitle">先认识星海中的你</h1>
+            <p class="onboarding-intro">登记姓名与生日，让这本书记得你。生日用于专属祝福；生日当天进入祝福时，系统会按隐私规则提醒网站管理员，不会向其他访客公开。</p>
+
+            <div id="profileForms">
+                <div class="form-switch" role="group" aria-label="选择进入方式">
+                    <button type="button" class="form-tab is-active" id="registerTab" aria-pressed="true">初次相遇</button>
+                    <button type="button" class="form-tab" id="returnTab" aria-pressed="false">再次来访</button>
+                </div>
+                <form id="registerForm" class="profile-form">
+                    <label for="registerName">你的名字</label>
+                    <input id="registerName" name="name" maxlength="40" autocomplete="name" required>
+                    <label for="registerBirthday">你的生日</label>
+                    <input id="registerBirthday" name="birth_date" type="date" autocomplete="bday" required>
+                    <button type="submit" class="primary-button">留下星辰印记</button>
+                </form>
+                <form id="returnForm" class="profile-form" hidden>
+                    <label for="returnName">登记时使用的名字</label>
+                    <input id="returnName" name="name" maxlength="40" autocomplete="name" required>
+                    <label for="returnBirthday">生日</label>
+                    <input id="returnBirthday" name="birth_date" type="date" autocomplete="bday" required>
+                    <label id="recoveryLabel" for="recoveryCode" hidden>登记时保存的识别码</label>
+                    <input id="recoveryCode" name="recovery_code" maxlength="16" autocomplete="off" hidden>
+                    <button type="submit" class="primary-button">再次进入</button>
+                </form>
+                <p id="profileError" class="error-message" role="alert" hidden></p>
+            </div>
+
+            <div id="recoveryStage" class="recovery-stage" hidden>
+                <p class="recovery-title">请保存你的专属识别码</p>
+                <p>只有姓名和生日完全相同的登记发生重名时，才需要用它区分身份。此识别码只显示这一次。</p>
+                <code id="recoveryDisplay" class="recovery-code"></code>
+                <button type="button" id="recoveryContinue" class="primary-button">我已保存，进入书页</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="birthdayGate" class="birthday-gate" aria-labelledby="birthdayTitle" hidden>
+        <div class="birthday-stars" aria-hidden="true">✦　·　✧　　✦　·　✧　✦</div>
+        <div class="birthday-card">
+            <p class="birthday-kicker">A NEW ORBIT BEGINS</p>
+            <div class="birthday-emblem" aria-hidden="true">✦</div>
+            <h1 id="birthdayTitle">生日快乐，<span id="birthdayName"></span></h1>
+            <p id="birthdayMessage" class="birthday-message"></p>
+            <p class="birthday-wish">愿你在新一岁里，遇见温柔，也始终保有自己的光。</p>
+            <button type="button" id="birthdayContinue" class="primary-button">收下祝福，开启书页</button>
+        </div>
+    </section>
+
+    <div id="fateGateReveal" class="fate-gate-reveal" aria-hidden="true" hidden>
+        <div class="fate-gate-light"></div>
+        <div class="fate-gate-doors">
+            <div class="fate-gate-door fate-gate-door-left">
+                <span class="fate-gate-door-panel"></span>
+                <span class="fate-gate-handle"></span>
+            </div>
+            <div class="fate-gate-door fate-gate-door-right">
+                <span class="fate-gate-door-panel"></span>
+                <span class="fate-gate-handle"></span>
+            </div>
+        </div>
+        <p class="fate-gate-title" id="eggRevealTitle">命运之门</p>
+    </div>
+
+    <main class="page-shell" id="mainContent" hidden>
+        <header class="site-header">
+            <p class="eyebrow">A LITTLE MAGIC · A LITTLE MYSTERY</p>
+            <h1>答案之书</h1>
+            <p class="subtitle">每一个问题，都值得一次安静的凝望。</p>
+            <div class="user-bar">
+                <span>星海记得你，<strong id="userName"></strong></span>
+                <span id="memorySummary" class="memory-summary"></span>
+                <button type="button" id="switchUserButton" class="switch-user-button">切换访客</button>
+            </div>
+        </header>
+
+        <!-- 书籍封面使用 CSS 绘制，不依赖外部图片或额外安装 -->
+        <section class="book-stage" aria-label="星海中的答案之书">
+            <div class="book-glow"></div>
+            <div class="book-object" id="bookObject">
+                <div class="book-pages" aria-hidden="true">
+                    <div class="book-page book-page-left"></div>
+                    <div class="book-page book-page-right"></div>
+                </div>
+                <div class="book-cover" id="bookCover" aria-hidden="true">
+                    <div class="cover-frame">
+                        <div class="cover-top-symbol">✧</div>
+                        <p class="cover-kicker">THE ANCIENT</p>
+                        <h2>BOOK<br>OF<br>ANSWERS</h2>
+                        <div class="cover-divider"><span></span> ✦ <span></span></div>
+                        <p class="cover-chinese">命运 · 星辰 · 未知</p>
+                        <div class="cover-rune rune-left">☾</div>
+                        <div class="cover-rune rune-right">✶</div>
+                    </div>
+                    <div class="cover-inside" aria-hidden="true">
+                        <span>✧</span>
+                        <small>星海在倾听</small>
+                    </div>
+                </div>
+                <div class="book-spread" id="bookSpread" aria-label="答案之书页面">
+                    <div class="spread-page spread-page-left">
+                        <span class="page-ornament" aria-hidden="true">✧</span>
+                        <span class="page-chapter">THE BOOK OF ANSWERS</span>
+                        <span class="page-rule" aria-hidden="true"></span>
+                        <span class="page-mantra">静心聆听，<br>答案自会浮现。</span>
+                    </div>
+                    <div class="spread-page spread-page-right" aria-live="polite">
+                        <span class="page-number">✦</span>
+                        <span id="pagePrompt" class="page-prompt">把心中的问题交给星海</span>
+                        <p id="answerText" class="answer-text"></p>
+                        <span id="pageWaiting" class="page-waiting" hidden>星尘正在汇聚……</span>
+                        <span class="page-number page-number-bottom">✦</span>
+                    </div>
+                </div>
+            </div>
+            <p class="book-caption">静下心来，写下你真正想问的问题。</p>
+        </section>
+
+        <section class="question-panel panel">
+            <label for="questionInput" class="field-label">你想向星海询问什么？</label>
+            <textarea
+                id="questionInput"
+                maxlength="500"
+                placeholder="例如：我应该主动迈出这一步吗？"
+                rows="3"
+                autocomplete="off"
+            ></textarea>
+            <div class="input-meta">
+                <span>不必追求完美措辞，写下你真正关心的事。</span>
+                <span id="charCount">0 / 500</span>
+            </div>
+            <button type="button" id="askButton" class="primary-button">
+                <span class="button-star" aria-hidden="true">✦</span>
+                <span id="buttonText">揭晓命运的答案</span>
+                <span class="button-star" aria-hidden="true">✦</span>
+            </button>
+            <p id="errorMessage" class="error-message" role="alert" hidden></p>
+        </section>
+
+        <!-- 初始隐藏；拿到后端答案后才显示 -->
+        <section id="answerPanel" class="answer-panel panel" aria-live="polite" hidden>
+            <canvas class="egg-particle-canvas" id="eggParticles" aria-hidden="true"></canvas>
+            <div class="egg-special-effect" aria-hidden="true">
+                <span class="egg-effect-orbit"></span>
+                <span class="egg-effect-spark"></span>
+            </div>
+            <p class="answer-kicker" id="answerCategory">THE BOOK HAS SPOKEN</p>
+            <p id="answerNote" class="answer-note">请把它当作一次思考的提示，而不是不可更改的预言。</p>
+            <button type="button" id="reviewQuestionButton" class="review-question-button">将这条问题提交人工审核</button>
+            <p id="reviewStatus" class="review-status" role="status" hidden></p>
+            <button type="button" id="askAgainButton" class="secondary-button">再问一个问题</button>
+        </section>
+
+        <footer class="site-footer">
+            <button type="button" id="soundButton" class="sound-button" aria-pressed="true" title="浏览器限制自动播放；首次点击或按键后开始播放">
+                <span id="soundIcon" aria-hidden="true">♫</span>
+                <span id="soundLabel">音乐与音效已开启</span>
+            </button>
+            <p>星辰提供灵感，选择仍在你手中。</p>
+        </footer>
+    </main>
+
+    <!-- defer 确保页面元素载入后再运行交互代码 -->
+    <script src="{{ url_for('static', filename='js/main.js', v='20261015-1653') }}" defer></script>
+</body>
+</html>
